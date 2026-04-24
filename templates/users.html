@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}用户列表{% endblock %}
+{% block content %}
+<h2>用户列表</h2>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>用户名</th>
+      <th>手机号</th>
+      <th>邮箱</th>
+      <th>创建时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.user_id }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.phone }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.created_at }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">暂无用户数据</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
