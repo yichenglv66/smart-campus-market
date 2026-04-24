@@ -1,2 +1,41 @@
-# smart-campus-market
-A campus second-hand trading platform based on Python + FastAPI + MySQL, which supports product posting, order management, database query statistics and transaction purchase processes, and reserves the ability to expand features such as AI-optimized product descriptions.
+# AGENTS.md
+
+## 项目目标
+构建一个“校园二手交易平台”项目，用于完成数据库课程作业，并进一步扩展为适合写入简历的后端项目。
+
+## 技术栈
+- Python 3.11+
+- FastAPI
+- Jinja2
+- SQLAlchemy
+- MySQL
+- Uvicorn
+- pytest
+
+## 项目要求
+- 最终需要能提供一个在线访问的网址
+- 至少包含：首页、商品列表页、用户列表页、订单列表页
+- 页面必须展示真实数据库数据
+- 必须完成课程要求中的 CRUD、查询、视图、购买事务、安全性与并发恢复说明
+- 在完成课程要求后，可以增加一个轻量 AI 功能
+
+## 编码要求
+- 优先保证代码简单、清晰、易维护
+- 不要过度设计
+- 不要引入不必要的复杂依赖
+- 目录结构尽量规范
+- 保持变量命名清晰
+- 仅在必要时添加注释
+
+## 工作流要求
+- 编码前先给出简短实现计划
+- 编码后列出修改过的文件
+- 提供本地运行命令
+- 尽量运行测试或基本检查
+- 如果有未完成部分，明确说明
+
+## 范围约束
+- 先完成课程作业要求
+- 再增加一个轻量 AI 功能
+- 不要一开始实现复杂认证系统
+- 不要拆成微服务
