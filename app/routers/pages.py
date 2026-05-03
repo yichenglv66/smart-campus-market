@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import Item, Order, User
 from app.db.session import get_db
+from app.services.ai_description import AIDescriptionError, generate_item_description_draft
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -59,6 +60,55 @@ def item_list(request: Request, db: Session = Depends(get_db)):
             "users": db.query(User).order_by(User.user_id.asc()).all(),
             "message": request.query_params.get("message", ""),
             "message_type": request.query_params.get("message_type", ""),
+            "ai_draft": request.query_params.get("ai_draft", ""),
+            "title_prefill": request.query_params.get("title", ""),
+            "category_prefill": request.query_params.get("category", ""),
+        },
+    )
+
+
+@router.post("/items/ai-draft")
+def generate_ai_draft(
+    request: Request,
+    title: str = Form(...),
+    category: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    users = db.query(User).order_by(User.user_id.asc()).all()
+    items = db.query(Item).options(joinedload(Item.seller)).order_by(Item.item_id.asc()).all()
+    if not title.strip():
+        return templates.TemplateResponse(
+            request=request,
+            name="items.html",
+            context={
+                "items": items,
+                "users": users,
+                "message": "请先输入商品标题，再生成描述",
+                "message_type": "error",
+                "ai_draft": "",
+                "title_prefill": title,
+                "category_prefill": category,
+            },
+        )
+    try:
+        draft = generate_item_description_draft(title=title.strip(), category=category.strip())
+        msg = "AI 描述草稿生成成功（可编辑后再保存）"
+        msg_type = "success"
+    except AIDescriptionError:
+        draft = ""
+        msg = "AI 接口调用失败，请手动填写描述后继续"
+        msg_type = "error"
+    return templates.TemplateResponse(
+        request=request,
+        name="items.html",
+        context={
+            "items": items,
+            "users": users,
+            "message": msg,
+            "message_type": msg_type,
+            "ai_draft": draft,
+            "title_prefill": title,
+            "category_prefill": category,
         },
     )
 

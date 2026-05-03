@@ -13,6 +13,10 @@ class Settings:
     mysql_user: str = os.getenv("MYSQL_USER", "root")
     mysql_password: str = os.getenv("MYSQL_PASSWORD", "")
     mysql_database: str = os.getenv("MYSQL_DATABASE", "smart_campus_market")
+    llm_api_key: str = os.getenv("LLM_API_KEY", "")
+    llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+    llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    llm_timeout_seconds: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "8"))
 
     @property
     def database_url(self) -> str:
