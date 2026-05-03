@@ -46,7 +46,7 @@ class Order(Base):
 
     order_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     buyer_id: Mapped[int] = mapped_column(ForeignKey("user.user_id"), nullable=False, index=True)
-    item_id: Mapped[int] = mapped_column(ForeignKey("item.item_id"), nullable=False, unique=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("item.item_id"), nullable=False)
     deal_price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
