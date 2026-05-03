@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import case, func, text
 from sqlalchemy.orm import Session, joinedload
 
@@ -156,6 +157,66 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
     return RedirectResponse(
         url="/items?message=商品删除成功&message_type=success",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.post("/items/{item_id}/purchase")
+def purchase_item(
+    item_id: int,
+    buyer_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        with db.begin():
+            item = (
+                db.query(Item)
+                .filter(Item.item_id == item_id)
+                .with_for_update()
+                .first()
+            )
+            if not item:
+                return RedirectResponse(
+                    url="/items?message=购买失败：商品不存在&message_type=error",
+                    status_code=status.HTTP_303_SEE_OTHER,
+                )
+            if item.status == 1:
+                return RedirectResponse(
+                    url="/items?message=购买失败：商品已售出&message_type=error",
+                    status_code=status.HTTP_303_SEE_OTHER,
+                )
+            if item.seller_id == buyer_id:
+                return RedirectResponse(
+                    url="/items?message=购买失败：不能购买自己发布的商品&message_type=error",
+                    status_code=status.HTTP_303_SEE_OTHER,
+                )
+            if not db.get(User, buyer_id):
+                return RedirectResponse(
+                    url="/items?message=购买失败：买家不存在&message_type=error",
+                    status_code=status.HTTP_303_SEE_OTHER,
+                )
+
+            order = Order(
+                buyer_id=buyer_id,
+                item_id=item.item_id,
+                deal_price=item.price,
+            )
+            db.add(order)
+            item.status = 1
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(
+            url="/items?message=购买失败：商品已被其他人抢先购买&message_type=error",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except Exception:
+        db.rollback()
+        return RedirectResponse(
+            url="/items?message=购买失败：事务执行异常，已回滚&message_type=error",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    return RedirectResponse(
+        url="/items?message=购买成功，已生成订单&message_type=success",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 
