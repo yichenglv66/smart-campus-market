@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}商品列表{% endblock %}
+{% block content %}
+<h2>商品列表</h2>
+{% if message %}
+<p class="message {{ message_type }}">{{ message }}</p>
+{% endif %}
+
+<section>
+  <h3>新增商品</h3>
+  <form method="post" action="/items" class="inline-form">
+    <label>卖家：
+      <select name="seller_id" required>
+        {% for user in users %}
+        <option value="{{ user.user_id }}">{{ user.user_id }} - {{ user.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>标题：<input type="text" name="title" required /></label>
+    <label>描述：<input type="text" name="description" required /></label>
+    <label>价格：<input type="number" step="0.01" min="0" name="price" required /></label>
+    <button type="submit">新增</button>
+  </form>
+</section>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>标题</th>
+      <th>描述</th>
+      <th>价格</th>
+      <th>状态</th>
+      <th>卖家</th>
+      <th>创建时间</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.item_id }}</td>
+      <td>{{ item.title }}</td>
+      <td>{{ item.description }}</td>
+      <td>{{ item.price }}</td>
+      <td>{% if item.status == 1 %}已售出{% else %}未售出{% endif %}</td>
+      <td>{{ item.seller.username if item.seller else '-' }}</td>
+      <td>{{ item.created_at }}</td>
+      <td>
+        <form method="post" action="/items/{{ item.item_id }}/price" class="inline-form">
+          <input type="number" step="0.01" min="0" name="price" value="{{ item.price }}" required />
+          <button type="submit">改价</button>
+        </form>
+        <form method="post" action="/items/{{ item.item_id }}/delete" class="inline-form">
+          <button type="submit">删除</button>
+        </form>
+        {% if item.status == 0 %}
+        <form method="post" action="/items/{{ item.item_id }}/purchase" class="inline-form">
+          <select name="buyer_id" required>
+            {% for user in users %}
+            <option value="{{ user.user_id }}">{{ user.user_id }} - {{ user.username }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">购买</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">暂无商品数据</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
