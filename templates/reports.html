@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}查询报表{% endblock %}
+{% block content %}
+<h2>数据库课程查询报表</h2>
+<p>说明：当前数据表没有独立 category 字段，“生活用品类”按标题/描述关键词（台灯/键盘/充电宝/宿舍）统一归类。</p>
+<p>说明：u001 在当前作业数据中映射为 user_id=1。</p>
+
+<h3>一、基本查询</h3>
+<h4>1) 所有未售出商品</h4>
+<ul>{% for i in unsold_items %}<li>{{ i.item_id }} - {{ i.title }} - {{ i.price }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>2) 价格大于 30 的商品</h4>
+<ul>{% for i in price_gt_30_items %}<li>{{ i.item_id }} - {{ i.title }} - {{ i.price }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>3) 生活用品类商品</h4>
+<ul>{% for i in life_items %}<li>{{ i.item_id }} - {{ i.title }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>4) u001 发布的所有商品</h4>
+<ul>{% for i in u001_items %}<li>{{ i.item_id }} - {{ i.title }} - status={{ i.status }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+
+<h3>二、连接查询</h3>
+<h4>1) 已售商品及买家姓名</h4>
+<ul>{% for r in sold_with_buyer %}<li>{{ r.title }} -> {{ r.buyer_name }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>2) 每个订单：商品名 + 买家名 + 日期</h4>
+<ul>{% for r in order_item_buyer_date %}<li>#{{ r.order_id }} {{ r.title }} / {{ r.buyer_name }} / {{ r.created_at }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>3) 卖家是 u001 的商品是否被购买</h4>
+<ul>{% for r in u001_sold_status %}<li>{{ r.item_id }} - {{ r.title }} -> {% if r.is_purchased %}已购买{% else %}未购买{% endif %}</li>{% else %}<li>无</li>{% endfor %}</ul>
+
+<h3>三、聚合与分组</h3>
+<p>1) 商品总数：{{ total_item_count }}</p>
+<p>2) 每类商品数量：</p>
+<ul>{% for r in category_counts %}<li>{{ r.category_name }}: {{ r.count }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<p>3) 所有商品平均价格：{{ "%.2f"|format(avg_price or 0) }}</p>
+<p>4) 发布商品最多的用户：
+{% if top_seller %}
+{{ top_seller.user_id }} - {{ top_seller.username }}（{{ top_seller.item_count }} 件）
+{% else %}
+无
+{% endif %}
+</p>
+
+<h3>四、视图</h3>
+<h4>1) 已售商品视图（商品名 + 买家ID）</h4>
+<ul>{% for r in sold_view_rows %}<li>{{ r.item_title }} -> buyer_id={{ r.buyer_id }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+<h4>2) 未售商品视图</h4>
+<ul>{% for r in unsold_view_rows %}<li>{{ r.item_id }} - {{ r.title }} - seller_id={{ r.seller_id }} - {{ r.price }}</li>{% else %}<li>无</li>{% endfor %}</ul>
+{% endblock %}
