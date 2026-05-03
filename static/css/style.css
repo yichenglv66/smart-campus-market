@@ -41,3 +41,26 @@ th, td {
 th {
   background: #f0f0f0;
 }
+
+.inline-form {
+  display: inline-flex;
+  gap: 6px;
+  margin: 4px 8px 4px 0;
+  align-items: center;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.message.success {
+  background: #e9f8ef;
+  color: #1f7a3a;
+}
+
+.message.error {
+  background: #fdecec;
+  color: #9b1c1c;
+}
