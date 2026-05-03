@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}订单列表{% endblock %}
+{% block content %}
+<h2>订单列表</h2>
+<table>
+  <thead>
+    <tr>
+      <th>订单ID</th>
+      <th>买家</th>
+      <th>商品</th>
+      <th>卖家</th>
+      <th>成交价</th>
+      <th>下单时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+    <tr>
+      <td>{{ order.order_id }}</td>
+      <td>{{ order.buyer.username if order.buyer else '-' }}</td>
+      <td>{{ order.item.title if order.item else '-' }}</td>
+      <td>{{ order.item.seller.username if order.item and order.item.seller else '-' }}</td>
+      <td>{{ order.deal_price }}</td>
+      <td>{{ order.created_at }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">暂无订单数据</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
