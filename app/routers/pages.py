@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func
+from sqlalchemy import case, func, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import Item, Order, User
@@ -172,4 +172,119 @@ def order_list(request: Request, db: Session = Depends(get_db)):
         request=request,
         name="orders.html",
         context={"orders": orders},
+    )
+
+
+@router.get("/reports")
+def reports_page(request: Request, db: Session = Depends(get_db)):
+    # 类别统一：当前表结构无 category 字段，使用标题/描述关键字归类。
+    category_case = case(
+        (Item.title.like("%台灯%"), "生活用品"),
+        (Item.title.like("%键盘%"), "生活用品"),
+        (Item.title.like("%充电宝%"), "生活用品"),
+        else_="其他",
+    )
+
+    # 一、基本查询
+    unsold_items = db.query(Item).filter(Item.status == 0).order_by(Item.item_id.asc()).all()
+    price_gt_30_items = db.query(Item).filter(Item.price > 30).order_by(Item.item_id.asc()).all()
+    life_items = (
+        db.query(Item)
+        .filter(
+            Item.title.like("%台灯%")
+            | Item.title.like("%键盘%")
+            | Item.title.like("%充电宝%")
+            | Item.description.like("%宿舍%")
+        )
+        .order_by(Item.item_id.asc())
+        .all()
+    )
+    u001_items = db.query(Item).filter(Item.seller_id == 1).order_by(Item.item_id.asc()).all()
+
+    # 二、连接查询
+    sold_with_buyer = (
+        db.query(Item.title, User.username.label("buyer_name"))
+        .join(Order, Order.item_id == Item.item_id)
+        .join(User, User.user_id == Order.buyer_id)
+        .filter(Item.status == 1)
+        .order_by(Item.item_id.asc())
+        .all()
+    )
+    order_item_buyer_date = (
+        db.query(Order.order_id, Item.title, User.username.label("buyer_name"), Order.created_at)
+        .join(Item, Item.item_id == Order.item_id)
+        .join(User, User.user_id == Order.buyer_id)
+        .order_by(Order.order_id.asc())
+        .all()
+    )
+    u001_sold_status = (
+        db.query(Item.item_id, Item.title, Order.order_id.is_not(None).label("is_purchased"))
+        .outerjoin(Order, Order.item_id == Item.item_id)
+        .filter(Item.seller_id == 1)
+        .order_by(Item.item_id.asc())
+        .all()
+    )
+
+    # 三、聚合与分组
+    total_item_count = db.query(func.count(Item.item_id)).scalar() or 0
+    category_counts = (
+        db.query(category_case.label("category_name"), func.count(Item.item_id).label("count"))
+        .group_by(category_case)
+        .order_by(func.count(Item.item_id).desc())
+        .all()
+    )
+    avg_price = db.query(func.avg(Item.price)).scalar()
+    top_seller = (
+        db.query(User.user_id, User.username, func.count(Item.item_id).label("item_count"))
+        .join(Item, Item.seller_id == User.user_id)
+        .group_by(User.user_id, User.username)
+        .order_by(func.count(Item.item_id).desc(), User.user_id.asc())
+        .first()
+    )
+
+    # 四、视图（原生 SQL）
+    db.execute(
+        text(
+            """
+            CREATE OR REPLACE VIEW v_sold_item_buyer AS
+            SELECT i.title AS item_title, o.buyer_id
+            FROM item i
+            JOIN orders o ON o.item_id = i.item_id
+            WHERE i.status = 1
+            """
+        )
+    )
+    db.execute(
+        text(
+            """
+            CREATE OR REPLACE VIEW v_unsold_item AS
+            SELECT item_id, title, seller_id, price, created_at
+            FROM item
+            WHERE status = 0
+            """
+        )
+    )
+    sold_view_rows = db.execute(text("SELECT item_title, buyer_id FROM v_sold_item_buyer ORDER BY item_title")).all()
+    unsold_view_rows = db.execute(
+        text("SELECT item_id, title, seller_id, price, created_at FROM v_unsold_item ORDER BY item_id")
+    ).all()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports.html",
+        context={
+            "unsold_items": unsold_items,
+            "price_gt_30_items": price_gt_30_items,
+            "life_items": life_items,
+            "u001_items": u001_items,
+            "sold_with_buyer": sold_with_buyer,
+            "order_item_buyer_date": order_item_buyer_date,
+            "u001_sold_status": u001_sold_status,
+            "total_item_count": total_item_count,
+            "category_counts": category_counts,
+            "avg_price": avg_price,
+            "top_seller": top_seller,
+            "sold_view_rows": sold_view_rows,
+            "unsold_view_rows": unsold_view_rows,
+        },
     )
